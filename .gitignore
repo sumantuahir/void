@@ -1,0 +1,18 @@
+# SQLite database file
+void.db
+
+# OS files
+Thumbs.db
+.DS_Store
+
+# Environment variables
+.env
+.env.local
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Archives
+*.zip
+
