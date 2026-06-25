@@ -6,9 +6,7 @@ let activeProductTag = "001";
 let selectedColor = "";
 let selectedSizeVal = "M";
 
-const API_BASE = (window.location.protocol === 'http:' || window.location.protocol === 'https:') && (window.location.port === '5001' || window.location.port === '8000')
-  ? ''
-  : 'http://127.0.0.1:8000';
+const API_BASE = '';
 
 function getAuthHeaders() {
   const headers = { 'Content-Type': 'application/json' };
