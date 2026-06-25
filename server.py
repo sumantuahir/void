@@ -767,13 +767,21 @@ class VoidRequestHandler(http.server.SimpleHTTPRequestHandler):
         if self.path == "/api/waitlist":
             email = data.get("email")
             date = data.get("date")
-            cursor.execute("INSERT INTO waitlist (email, date) VALUES (%s, %s)", (email, date))
-            conn.commit()
-            conn.close()
-            self.send_response(201)
-            self.send_header('Content-Type', 'application/json')
-            self.end_headers()
-            self.wfile.write(json.dumps({"status": "success"}).encode('utf-8'))
+            try:
+                cursor.execute("INSERT INTO waitlist (email, date) VALUES (%s, %s)", (email, date))
+                conn.commit()
+                self.send_response(201)
+                self.send_header('Content-Type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps({"status": "success"}).encode('utf-8'))
+            except Exception as e:
+                print(f"Error inserting into waitlist: {e}")
+                self.send_response(500)
+                self.send_header('Content-Type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps({"error": str(e)}).encode('utf-8'))
+            finally:
+                conn.close()
             return
 
         # 2. POST Contact Form API
@@ -783,22 +791,30 @@ class VoidRequestHandler(http.server.SimpleHTTPRequestHandler):
             subject = data.get("subject", "General Enquiry")
             message = data.get("message")
             date = data.get("date")
-            cursor.execute('''
-                INSERT INTO contacts (name, email, subject, message, date) 
-                VALUES (%s, %s, %s, %s, %s)
-            ''', (name, email, subject, message, date))
-            conn.commit()
-            conn.close()
-            
-            # Dispatch async notification email
-            subj = f"[VOID Contact] Message from {name}"
-            body = f"Name: {name}\nEmail: {email}\nSubject: {subject}\n\nMessage:\n{message}"
-            threading.Thread(target=send_direct_email, args=(email, subj, body), daemon=True).start()
+            try:
+                cursor.execute('''
+                    INSERT INTO contacts (name, email, subject, message, date) 
+                    VALUES (%s, %s, %s, %s, %s)
+                ''', (name, email, subject, message, date))
+                conn.commit()
+                
+                # Dispatch async notification email
+                subj = f"[VOID Contact] Message from {name}"
+                body = f"Name: {name}\nEmail: {email}\nSubject: {subject}\n\nMessage:\n{message}"
+                threading.Thread(target=send_direct_email, args=(email, subj, body), daemon=True).start()
 
-            self.send_response(201)
-            self.send_header('Content-Type', 'application/json')
-            self.end_headers()
-            self.wfile.write(json.dumps({"status": "success"}).encode('utf-8'))
+                self.send_response(201)
+                self.send_header('Content-Type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps({"status": "success"}).encode('utf-8'))
+            except Exception as e:
+                print(f"Error inserting into contacts: {e}")
+                self.send_response(500)
+                self.send_header('Content-Type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps({"error": str(e)}).encode('utf-8'))
+            finally:
+                conn.close()
             return
 
         # 3. POST Orders API (Checkout payments integration)
