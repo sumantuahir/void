@@ -10,7 +10,7 @@ const API_BASE = '';
 
 function getAuthHeaders() {
   const headers = { 'Content-Type': 'application/json' };
-  const userJson = sessionStorage.getItem('void_user');
+  const userJson = localStorage.getItem('void_user');
   if (userJson) {
     const user = JSON.parse(userJson);
     headers['X-User-Email'] = user.email;
@@ -972,7 +972,7 @@ function handleContactSubmit(e) {
 // CUSTOMER TICKETING LOGS
 // ═══════════════════════════
 function loadUserTickets() {
-  const user = JSON.parse(sessionStorage.getItem('void_user'));
+  const user = JSON.parse(localStorage.getItem('void_user'));
   const section = document.getElementById('contact-tickets-section');
   const listContainer = document.getElementById('tickets-list-container');
 
@@ -1016,7 +1016,7 @@ function loadUserTickets() {
 }
 
 function loadUserProfileData() {
-  const user = JSON.parse(sessionStorage.getItem('void_user'));
+  const user = JSON.parse(localStorage.getItem('void_user'));
   if (!user) {
     showPage('login');
     return;
@@ -1108,7 +1108,7 @@ function loadUserProfileData() {
 
 function handleTicketSubmit(e) {
   e.preventDefault();
-  const user = JSON.parse(sessionStorage.getItem('void_user'));
+  const user = JSON.parse(localStorage.getItem('void_user'));
   if (!user) return;
 
   const subject = document.getElementById('ticket-subject').value;
@@ -1212,7 +1212,7 @@ function switchAdminTab(tabName) {
 }
 
 function loadAdminData() {
-  const userJson = sessionStorage.getItem('void_user');
+  const userJson = localStorage.getItem('void_user');
   let isAuthorized = false;
   if (userJson) {
     const user = JSON.parse(userJson);
@@ -1232,8 +1232,8 @@ function loadAdminData() {
   voidFetch(`${API_BASE}/api/admin`)
   .then(res => {
     if (res.status === 401) {
-      sessionStorage.removeItem('void_user');
-      sessionStorage.removeItem('void_admin_authorized');
+      localStorage.removeItem('void_user');
+      localStorage.removeItem('void_admin_authorized');
       loadAdminData();
       throw new Error('Unauthorized');
     }
@@ -2203,7 +2203,7 @@ function handleTicketReplySubmit(e) {
 // AUTHENTICATION LOGIC & RBAC
 // ═══════════════════════════
 function updateAuthUI() {
-  const user = JSON.parse(sessionStorage.getItem('void_user'));
+  const user = JSON.parse(localStorage.getItem('void_user'));
   const guestLinks = document.getElementById('nav-guest-links');
   const userLinks = document.getElementById('nav-user-links');
   const usernameDisplay = document.getElementById('nav-username-display');
@@ -2271,14 +2271,14 @@ function handleLoginSubmit(e) {
   })
   .then(data => {
     if (errorMsg) errorMsg.classList.remove('visible');
-    sessionStorage.setItem('void_user', JSON.stringify(data.user));
+    localStorage.setItem('void_user', JSON.stringify(data.user));
     if (data.token) {
-      sessionStorage.setItem('void_token', data.token);
+      localStorage.setItem('void_token', data.token);
     }
     
     const is_admin = ['superadmin', 'admin', 'staff'].includes(data.user.role);
     if (is_admin) {
-      sessionStorage.setItem('void_admin_authorized', 'true');
+      localStorage.setItem('void_admin_authorized', 'true');
     }
     
     updateAuthUI();
@@ -2321,9 +2321,9 @@ function handleSignUpSubmit(e) {
   })
   .then(data => {
     if (errorMsg) errorMsg.classList.remove('visible');
-    sessionStorage.setItem('void_user', JSON.stringify(data.user));
+    localStorage.setItem('void_user', JSON.stringify(data.user));
     if (data.token) {
-      sessionStorage.setItem('void_token', data.token);
+      localStorage.setItem('void_token', data.token);
     }
     updateAuthUI();
     document.getElementById('signup-form').reset();
@@ -2336,9 +2336,9 @@ function handleSignUpSubmit(e) {
 }
 
 function handleLogout() {
-  sessionStorage.removeItem('void_user');
-  sessionStorage.removeItem('void_admin_authorized');
-  sessionStorage.removeItem('void_token');
+  localStorage.removeItem('void_user');
+  localStorage.removeItem('void_admin_authorized');
+  localStorage.removeItem('void_token');
   updateAuthUI();
   showPage('home');
 }
@@ -2367,8 +2367,8 @@ function attemptAdminLogin() {
     }
     
     // Store user session
-    sessionStorage.setItem('void_user', JSON.stringify(data.user));
-    sessionStorage.setItem('void_admin_authorized', 'true');
+    localStorage.setItem('void_user', JSON.stringify(data.user));
+    localStorage.setItem('void_admin_authorized', 'true');
     
     if (errBlock) errBlock.classList.remove('visible');
     if (successBlock) successBlock.classList.add('visible');
@@ -2462,10 +2462,9 @@ function clearDbTable(key, tabName) {
 }
 
 function logoutAdmin() {
-  sessionStorage.removeItem('void_user');
-  sessionStorage.removeItem('void_admin_authorized');
   window.history.pushState({}, '', '/');
   showPage('home');
+  updateAuthUI();
 }
 
 function toggleMobileMenu() {
@@ -2495,7 +2494,7 @@ function handleRouting() {
     window.history.replaceState({}, '', '/login');
     showPage('login');
   } else if (path === '/admin-dashboard') {
-    if (sessionStorage.getItem('void_admin_authorized') === 'true') {
+    if (localStorage.getItem('void_admin_authorized') === 'true') {
       showPage('admin');
       loadAdminData();
     } else {
