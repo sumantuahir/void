@@ -391,6 +391,17 @@ def send_direct_email(recipient, subject, message):
         conn.close()
         return False, err_msg
 
+def get_request_path(handler_instance):
+    # Check headers Vercel might pass for rewritten paths
+    for header in ["x-matched-path", "x-forwarded-uri", "x-original-url", "x-vercel-forwarded-path"]:
+        val = handler_instance.headers.get(header)
+        if val:
+            # Strip query parameters if any
+            return val.split("?")[0]
+    # Fallback to standard parsing
+    parsed = urllib.parse.urlparse(handler_instance.path)
+    return parsed.path
+
 # ═══════════════════════════
 # REQUEST HANDLER
 # ═══════════════════════════
@@ -407,6 +418,7 @@ class handler(http.server.BaseHTTPRequestHandler):
 
     def do_GET(self):
         try:
+            self.path = get_request_path(self)
             self._do_GET()
         except Exception as e:
             import traceback
@@ -417,6 +429,19 @@ class handler(http.server.BaseHTTPRequestHandler):
             self.wfile.write(json.dumps({"error": f"Internal Server Error: {str(e)}"}).encode('utf-8'))
 
     def _do_GET(self):
+        # 0. Diagnostic Route
+        if "debug" in self.path:
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json')
+            self.end_headers()
+            headers_dict = {k: v for k, v in self.headers.items()}
+            self.wfile.write(json.dumps({
+                "self.path": self.path,
+                "headers": headers_dict,
+                "environ": {k: v for k, v in os.environ.items() if "PASS" not in k.upper() and "SECRET" not in k.upper() and "KEY" not in k.upper() and "URL" not in k.upper()}
+            }).encode('utf-8'))
+            return
+
         parsed_url = urllib.parse.urlparse(self.path)
         path = parsed_url.path
         query = urllib.parse.parse_qs(parsed_url.query)
@@ -749,6 +774,7 @@ class handler(http.server.BaseHTTPRequestHandler):
 
     def do_POST(self):
         try:
+            self.path = get_request_path(self)
             self._do_POST()
         except Exception as e:
             import traceback
