@@ -106,15 +106,15 @@ body.hovering #cursor-ring {
 .nav-links {
   display: flex;
   align-items: center;
-  gap: 40px;
+  gap: 24px;
 }
 
 .nav-link {
   font-family: 'Space Mono', monospace;
-  font-size: 8px;
-  letter-spacing: 0.3em;
+  font-size: 11px;
+  letter-spacing: 0.25em;
   text-transform: uppercase;
-  color: rgba(240,237,230,0.4);
+  color: rgba(240,237,230,0.45);
   transition: color 0.3s ease;
   cursor: none;
   padding: 4px 0;
@@ -138,8 +138,8 @@ body.hovering #cursor-ring {
 
 .nav-cta {
   font-family: 'Space Mono', monospace;
-  font-size: 8px;
-  letter-spacing: 0.3em;
+  font-size: 11px;
+  letter-spacing: 0.25em;
   text-transform: uppercase;
   border: 1px solid rgba(196,168,130,0.35);
   color: var(--sand);
@@ -1050,9 +1050,10 @@ body.hovering #cursor-ring {
 
 .mrule-n {
   font-family: 'Space Mono', monospace;
-  font-size: 8px;
+  font-size: clamp(12px, 1.5vw, 16px);
   letter-spacing: 0.2em;
-  opacity: 0.3;
+  color: var(--black);
+  opacity: 1;
   margin-bottom: 14px;
   display: block;
 }
@@ -1454,8 +1455,8 @@ footer {
 ═══════════════════════════ */
 .nav-cart {
   font-family: 'Space Mono', monospace;
-  font-size: 8px;
-  letter-spacing: 0.3em;
+  font-size: 11px;
+  letter-spacing: 0.25em;
   text-transform: uppercase;
   border: 1px solid rgba(196,168,130,0.35);
   color: var(--sand);
@@ -1478,13 +1479,13 @@ footer {
   background: var(--white);
   color: var(--black);
   border-radius: 50%;
-  width: 14px;
-  height: 14px;
+  width: 16px;
+  height: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
   font-family: 'Space Grotesk', sans-serif;
-  font-size: 8px;
+  font-size: 9px;
   font-weight: 500;
   transition: background 0.3s ease, color 0.3s ease;
 }
@@ -2045,19 +2046,19 @@ footer {
 .nav-divider {
   color: rgba(240,237,230,0.15);
   font-family: 'Space Mono', monospace;
-  font-size: 8px;
+  font-size: 11px;
   margin: 0 4px;
 }
 .nav-user-name {
   font-family: 'Space Mono', monospace;
-  font-size: 8px;
+  font-size: 11px;
   color: var(--sand);
   letter-spacing: 0.15em;
   text-transform: uppercase;
 }
 .nav-logout-btn {
   font-family: 'Space Mono', monospace;
-  font-size: 8px;
+  font-size: 11px;
   color: rgba(240, 237, 230, 0.4);
   letter-spacing: 0.15em;
   text-transform: uppercase;
@@ -2656,7 +2657,7 @@ footer {
    ═══════════════════════════ */
 .wishlist-badge {
   font-family: 'Space Mono', monospace;
-  font-size: 7px;
+  font-size: 9px;
   font-weight: 500;
   background: var(--sand);
   color: var(--black);
