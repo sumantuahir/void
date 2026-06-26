@@ -22,10 +22,31 @@ DB_URL = os.getenv("SUPABASE_DB_URL")
 # ═══════════════════════════
 # DATABASE INITIALIZATION
 # ═══════════════════════════
+_db_conn = None
+
 def get_db_conn():
+    global _db_conn
     if not DB_URL:
         raise ValueError("SUPABASE_DB_URL is not set in the environment variables.")
-    return psycopg2.connect(DB_URL)
+    
+    if _db_conn is not None:
+        try:
+            if _db_conn.closed == 0:
+                with _db_conn.cursor() as test_cur:
+                    test_cur.execute("SELECT 1")
+                return _db_conn
+        except Exception:
+            try:
+                object.__setattr__(_db_conn, 'close', _db_conn.__class__.close)
+                _db_conn.close()
+            except Exception:
+                pass
+            _db_conn = None
+
+    conn = psycopg2.connect(DB_URL)
+    conn.close = lambda: None
+    _db_conn = conn
+    return _db_conn
 
 def is_admin(headers):
     email = headers.get('X-User-Email')

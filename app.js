@@ -66,43 +66,61 @@ function fetchProducts() {
 function renderProductGrids() {
   const fpGrid = document.getElementById('featured-products-grid');
   const shopGrid = document.getElementById('shop-products-grid');
+  const productCodes = Object.keys(PRODUCTS);
   
   // 1. Render Featured Products (Home Page)
   if (fpGrid) {
     fpGrid.innerHTML = '';
-    const featuredList = Object.keys(PRODUCTS).filter(code => PRODUCTS[code].featured);
+    const featuredList = productCodes.filter(code => PRODUCTS[code].featured);
+    const displayList = featuredList.length > 0 ? featuredList : productCodes.slice(0, 2);
     
-    // Fallback if none are explicitly featured
-    const displayList = featuredList.length > 0 ? featuredList : Object.keys(PRODUCTS).slice(0, 2);
-    
-    displayList.forEach(code => {
-      const p = PRODUCTS[code];
-      const card = document.createElement('div');
-      card.className = 'pcard reveal visible';
-      card.onclick = () => openDrawer(code);
-      card.innerHTML = `
-        <div class="pcard-visual">
-          <img class="pcard-img" src="${p.image}" alt="${p.name}">
-          <span class="pcard-tag">${code}</span>
-        </div>
-        <div class="pcard-info">
-          <h3 class="pcard-name">${p.name}</h3>
-          <p class="pcard-material">${p.material}</p>
-          <button class="pcard-btn" onclick="event.stopPropagation(); openDrawer('${code}')">Explore →</button>
+    if (displayList.length === 0) {
+      fpGrid.innerHTML = `
+        <div class="no-products-msg" style="grid-column: 1 / -1; text-align: center; padding: 60px 20px; font-family: 'Outfit', sans-serif; color: rgba(255,255,255,0.6); font-size: 1.2rem; letter-spacing: 0.1em;">
+          <p>Products coming soon.</p>
         </div>
       `;
-      fpGrid.appendChild(card);
-    });
+    } else {
+      displayList.forEach(code => {
+        const p = PRODUCTS[code];
+        const card = document.createElement('div');
+        card.className = 'pcard reveal visible';
+        card.onclick = () => openDrawer(code);
+        card.innerHTML = `
+          <div class="pcard-visual">
+            <img class="pcard-img" src="${p.image}" alt="${p.name}">
+            <span class="pcard-tag">${code}</span>
+          </div>
+          <div class="pcard-info">
+            <h3 class="pcard-name">${p.name}</h3>
+            <p class="pcard-material">${p.material}</p>
+            <button class="pcard-btn" onclick="event.stopPropagation(); openDrawer('${code}')">Explore →</button>
+          </div>
+        `;
+        fpGrid.appendChild(card);
+      });
+    }
   }
 
   // 2. Render Shop Grid (Render all categories and dynamically generate filters)
   if (shopGrid) {
     shopGrid.innerHTML = '';
     
+    if (productCodes.length === 0) {
+      shopGrid.innerHTML = `
+        <div class="no-products-msg" style="grid-column: 1 / -1; text-align: center; padding: 80px 20px; font-family: 'Outfit', sans-serif; color: rgba(255,255,255,0.6); font-size: 1.2rem; letter-spacing: 0.1em;">
+          <p>Products coming soon.</p>
+        </div>
+      `;
+      const filtersContainer = document.querySelector('.shop-filters');
+      if (filtersContainer) filtersContainer.innerHTML = '';
+      return;
+    }
+
     // Track unique categories in loaded products
     const categories = new Set();
     
-    Object.keys(PRODUCTS).forEach(code => {
+    productCodes.forEach(code => {
       const p = PRODUCTS[code];
       categories.add(p.category);
       
