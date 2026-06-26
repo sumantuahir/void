@@ -106,7 +106,9 @@ function renderProductGrids() {
   if (shopGrid) {
     shopGrid.innerHTML = '';
     
+    const shopControls = document.getElementById('shop-controls');
     if (productCodes.length === 0) {
+      if (shopControls) shopControls.style.display = 'none';
       shopGrid.innerHTML = `
         <div class="no-products-msg" style="grid-column: 1 / -1; text-align: center; padding: 80px 20px; font-family: 'Outfit', sans-serif; color: rgba(255,255,255,0.6); font-size: 1.2rem; letter-spacing: 0.1em;">
           <p>Products coming soon.</p>
@@ -116,6 +118,8 @@ function renderProductGrids() {
       if (filtersContainer) filtersContainer.innerHTML = '';
       return;
     }
+
+    if (shopControls) shopControls.style.display = 'flex';
 
     // Track unique categories in loaded products
     const categories = new Set();

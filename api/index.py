@@ -22,6 +22,27 @@ DB_URL = os.getenv("SUPABASE_DB_URL")
 # ═══════════════════════════
 # DATABASE INITIALIZATION
 # ═══════════════════════════
+class PooledConnection:
+    def __init__(self, conn):
+        self._conn = conn
+
+    def __getattr__(self, name):
+        return getattr(self._conn, name)
+
+    def close(self):
+        # Do not close the connection so it stays in the pool/cache
+        pass
+
+    def actual_close(self):
+        self._conn.close()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        # Context manager exit behaviour: commit or rollback but do not close
+        return self._conn.__exit__(exc_type, exc_val, exc_tb)
+
 _db_conn = None
 
 def get_db_conn():
@@ -34,19 +55,18 @@ def get_db_conn():
             if _db_conn.closed == 0:
                 with _db_conn.cursor() as test_cur:
                     test_cur.execute("SELECT 1")
-                return _db_conn
+                return PooledConnection(_db_conn)
         except Exception:
             try:
-                object.__setattr__(_db_conn, 'close', _db_conn.__class__.close)
                 _db_conn.close()
             except Exception:
                 pass
             _db_conn = None
 
     conn = psycopg2.connect(DB_URL)
-    conn.close = lambda: None
     _db_conn = conn
-    return _db_conn
+    return PooledConnection(_db_conn)
+
 
 def is_admin(headers):
     email = headers.get('X-User-Email')
