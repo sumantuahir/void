@@ -203,6 +203,13 @@ def init_db():
         )
     ''')
 
+    # Check if database is already seeded to avoid re-inserting deleted products
+    cursor.execute("SELECT value FROM settings WHERE key = 'db_seeded'")
+    row = cursor.fetchone()
+    if row and row[0] == 'true':
+        conn.close()
+        return
+
     # Seed Default Settings
     default_settings = [
         ("website_name", "VOID Essentials"),
@@ -319,6 +326,8 @@ def init_db():
                 total_mock, "success", date_obj.isoformat()
             ))
 
+    # Mark database as seeded
+    cursor.execute("INSERT INTO settings (key, value) VALUES (%s, %s) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value", ("db_seeded", "true"))
     conn.commit()
     conn.close()
 
