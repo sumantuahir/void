@@ -272,39 +272,9 @@ def init_db():
     ]
     cursor.executemany("INSERT INTO settings (key, value) VALUES (%s, %s) ON CONFLICT (key) DO NOTHING", default_settings)
 
-    # Seed Default Products (with 4 premium products, all featured so they appear on both Home and Shop)
-    cursor.execute('''
-        INSERT INTO products (code, name, price, "desc", category, stock, colors, sizes, images, discount, featured, active)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) ON CONFLICT (code) DO NOTHING
-    ''', (
-        "001", "The Tee", 2400.0, 
-        "A classic crew neck cut with a heavy drape. Fabric is knitted in Surat from premium long-staple Supima cotton for a smooth face that softens with age. Finished with clean, invisible blind-stitched seams.",
-        "Tops", 85, "Bone,Warm Stone,Slate Earth,Deep Ink,Void", "XS,S,M,L,XL", "tee.png", 0, 1, 1
-    ))
-    cursor.execute('''
-        INSERT INTO products (code, name, price, "desc", category, stock, colors, sizes, images, discount, featured, active)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) ON CONFLICT (code) DO NOTHING
-    ''', (
-        "002", "The Linen Shirt", 3800.0,
-        "A relaxed, breathable summer classic. Blended cotton-linen woven in Surat, offering the raw texture of linen with the crease-resistant stability of cotton. Single patch pocket, clean collar.",
-        "Tops", 50, "Bone,Warm Stone,Slate Earth,Deep Ink", "S,M,L,XL", "shirt.png", 0, 1, 1
-    ))
-    cursor.execute('''
-        INSERT INTO products (code, name, price, "desc", category, stock, colors, sizes, images, discount, featured, active)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) ON CONFLICT (code) DO NOTHING
-    ''', (
-        "003", "The Classic T-Shirt", 1900.0,
-        "A classic standard fit tee made from organic cotton knitted in Surat. High neck ribbing and clean flatlock stitching make this an everyday layering staple.",
-        "Tops", 60, "Bone,Void,Warm Stone", "S,M,L,XL", "tee.png", 0, 1, 1
-    ))
-    cursor.execute('''
-        INSERT INTO products (code, name, price, "desc", category, stock, colors, sizes, images, discount, featured, active)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) ON CONFLICT (code) DO NOTHING
-    ''', (
-        "004", "The Oversized T-Shirt", 2600.0,
-        "A heavy drop-shoulder boxy fit streetwear staple. Woven from 280 GSM thick cotton jersey with a structured drape and a tight rib collar.",
-        "Tops", 45, "Void,Deep Ink,Slate Earth", "M,L,XL", "tee.png", 0, 1, 1
-    ))
+
+    # Default products seeding removed as requested (products should only exist if added by admin)
+
 
     # Seed Default Users
     admin_pass = hashlib.sha256("voidadmin".encode('utf-8')).hexdigest()
@@ -312,6 +282,12 @@ def init_db():
         INSERT INTO users (name, email, password, role, status, date)
         VALUES (%s, %s, %s, %s, %s, %s) ON CONFLICT (email) DO NOTHING
     ''', ("System Administrator", "void.essential.in@gmail.com", admin_pass, "superadmin", "active", datetime.now().isoformat()))
+    
+    new_admin_pass = hashlib.sha256("Void@2026".encode('utf-8')).hexdigest()
+    cursor.execute('''
+        INSERT INTO users (name, email, password, role, status, date)
+        VALUES (%s, %s, %s, %s, %s, %s) ON CONFLICT (email) DO NOTHING
+    ''', ("Sumantuahir", "Sumantuahir2005@gmail.com", new_admin_pass, "superadmin", "active", datetime.now().isoformat()))
     
     user_pass = hashlib.sha256("customer123".encode('utf-8')).hexdigest()
     cursor.execute('''
