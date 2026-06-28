@@ -124,6 +124,7 @@ def init_db():
     try:
         cursor.execute("UPDATE settings SET value = 'rzp_live_T78YfksyJxo5Hd' WHERE key = 'razorpay_key' AND (value IS NULL OR value = '' OR value = 'rzp_test_mock_key_id' OR value = 'rzp_test_T77MFwnA1Q4hFX')")
         cursor.execute("UPDATE settings SET value = 'QHwhu188386lMSsVeeswTR47' WHERE key = 'razorpay_secret' AND (value IS NULL OR value = '' OR value = 'rzp_test_mock_secret' OR value = 'ni4pNHaGXFKHjDHatmxWJ0AE')")
+        cursor.execute("UPDATE settings SET value = '+91 95104 90976' WHERE key = 'contact_phone' AND (value IS NULL OR value = '' OR value = '+91 00000 00000')")
         conn.commit()
     except Exception as e:
         pass
@@ -296,7 +297,7 @@ def init_db():
         ("website_name", "VOID Essentials"),
         ("logo_url", ""),
         ("contact_email", "void.essential.in@gmail.com"),
-        ("contact_phone", "+91 00000 00000"),
+        ("contact_phone", "+91 95104 90976"),
         ("social_instagram", "@void.essentials"),
         ("smtp_host", "smtp.gmail.com"),
         ("smtp_port", "587"),

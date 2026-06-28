@@ -2325,6 +2325,7 @@ function updateAuthUI() {
     if (guestLinks) guestLinks.style.display = 'inline-flex';
     if (userLinks) userLinks.style.display = 'none';
     if (adminPanelLink) adminPanelLink.style.display = 'none';
+    if (footerAdminLink) footerAdminLink.style.display = 'none';
     
     if (mobileGuest) mobileGuest.style.display = 'block';
     if (mobileUser) mobileUser.style.display = 'none';
