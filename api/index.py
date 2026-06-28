@@ -100,6 +100,85 @@ def get_razorpay_credentials():
             print(f"Error getting credentials from DB: {e}")
     return key_id, key_secret
 
+def sync_razorpay_orders():
+    try:
+        import razorpay
+        key_id, key_secret = get_razorpay_credentials()
+        if not key_id or "mock" in key_id or not key_secret or "mock" in key_secret:
+            return
+        
+        client = razorpay.Client(auth=(key_id, key_secret))
+        payments_data = client.payment.all({"count": 50})
+        payments = payments_data.get("items", [])
+        
+        conn = get_db_conn()
+        cursor = conn.cursor()
+        
+        # Get existing payment IDs in DB
+        cursor.execute("SELECT paymentId FROM orders WHERE paymentId IS NOT NULL AND paymentId != ''")
+        existing_payment_ids = {row[0] for row in cursor.fetchall()}
+        
+        updated = False
+        for p in payments:
+            if not p.get("captured") or p.get("status") != "captured":
+                continue
+            pay_id = p.get("id")
+            if pay_id in existing_payment_ids:
+                continue
+                
+            # Missing payment found! Recover order
+            email = p.get("email") or "customer@voidessentials.store"
+            contact = p.get("contact") or ""
+            amount = float(p.get("amount", 0)) / 100.0
+            created_at = p.get("created_at")
+            
+            from datetime import datetime
+            date_str = datetime.utcfromtimestamp(created_at).isoformat() + "Z"
+            
+            # Reconstruct description to try and find a generated order reference (e.g. VOID-123456)
+            desc = p.get("description", "")
+            order_ref = f"VOID-SYNC-{pay_id[-6:]}"
+            if "Order Reference:" in desc:
+                parts = desc.split("Order Reference:")
+                if len(parts) > 1:
+                    order_ref = parts[1].strip()
+            
+            # Address placeholder
+            address = f"Address not captured. Contact: {contact}"
+            
+            # Reconstruct items
+            items = [{
+                "prodId": "sync-recovered",
+                "name": "Sync Recovery Item",
+                "price": amount,
+                "color": "-",
+                "size": "-",
+                "qty": 1
+            }]
+            
+            import json
+            # Insert the recovered order
+            cursor.execute('''
+                INSERT INTO orders (id, name, email, address, items, total, status, payment_status, paymentId, date)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                ON CONFLICT (id) DO NOTHING
+            ''', (order_ref, "Customer (Sync)", email, address, json.dumps(items), amount, "pending", "paid", pay_id, date_str))
+            
+            # Log in payments table
+            cursor.execute('''
+                INSERT INTO payments (order_id, transaction_id, method, amount, status, date)
+                VALUES (%s, %s, %s, %s, %s, %s)
+                ON CONFLICT DO NOTHING
+            ''', (order_ref, pay_id, p.get("method", "razorpay"), amount, "success", date_str))
+            
+            updated = True
+            
+        if updated:
+            conn.commit()
+        conn.close()
+    except Exception as e:
+        print(f"Razorpay sync error: {e}")
+
 def is_admin(headers):
     email = headers.get('X-User-Email')
     if not email:
@@ -665,6 +744,9 @@ class handler(http.server.BaseHTTPRequestHandler):
                 self.end_headers()
                 self.wfile.write(json.dumps({"error": "Unauthorized"}).encode('utf-8'))
                 return
+
+            # Synchronize with Razorpay to heal any missing/dropped orders
+            sync_razorpay_orders()
 
             conn = get_db_conn()
             cursor = conn.cursor(cursor_factory=RealDictCursor)
