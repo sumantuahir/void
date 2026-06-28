@@ -464,6 +464,7 @@ class handler(http.server.BaseHTTPRequestHandler):
 
         # 1. GET Settings API
         if path == "/api/settings":
+            settings = get_settings()
             public_settings = {k: v for k, v in settings.items() if not k.endswith("pass") and not k.endswith("secret")}
             public_settings["razorpay_key_id"] = os.getenv("RAZORPAY_KEY_ID", settings.get("razorpay_key", "rzp_test_mock_key_id"))
             self.send_response(200)
