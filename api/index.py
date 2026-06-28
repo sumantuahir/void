@@ -473,6 +473,49 @@ class handler(http.server.BaseHTTPRequestHandler):
             self.wfile.write(json.dumps(public_settings).encode('utf-8'))
             return
 
+        # GET Single Order by ID (for Invoice Download)
+        elif path == "/api/order":
+            order_id = query.get("id", [None])[0]
+            if not order_id:
+                self.send_response(400)
+                self.send_header('Content-Type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps({"error": "Missing order ID"}).encode('utf-8'))
+                return
+
+            conn = get_db_conn()
+            cursor = conn.cursor(cursor_factory=RealDictCursor)
+            cursor.execute("SELECT * FROM orders WHERE id = %s", (order_id,))
+            row = cursor.fetchone()
+            conn.close()
+
+            if not row:
+                self.send_response(404)
+                self.send_header('Content-Type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps({"error": "Order not found"}).encode('utf-8'))
+                return
+
+            # Format the order response
+            order = {
+                "id": row["id"],
+                "name": row["name"],
+                "email": row["email"],
+                "address": row["address"],
+                "items": json.loads(row["items"]) if isinstance(row["items"], str) else row["items"],
+                "total": row["total"],
+                "status": row["status"],
+                "payment_status": row["payment_status"] if "payment_status" in row else "paid",
+                "paymentId": row.get("paymentid") if "paymentid" in row else row.get("paymentId"),
+                "date": row["date"]
+            }
+
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json')
+            self.end_headers()
+            self.wfile.write(json.dumps(order).encode('utf-8'))
+            return
+
         # GET Authenticated User's Orders API (History)
         elif path == "/api/orders/my" or path == "/api/orders":
             user_id = query.get("user_id", [None])[0]

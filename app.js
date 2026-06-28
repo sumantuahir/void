@@ -919,16 +919,12 @@ function closeRazorpayModal() {
 
 // Invoice Generator
 function downloadInvoice(orderId) {
-  voidFetch(`${API_BASE}/api/admin`, {
-    headers: { }
+  voidFetch(`${API_BASE}/api/order?id=${orderId}`)
+  .then(res => {
+    if (!res.ok) throw new Error("Order details could not be loaded.");
+    return res.json();
   })
-  .then(res => res.json())
-  .then(data => {
-    const order = data.orders.find(o => o.id === orderId);
-    if (!order) {
-      alert("Order details could not be loaded.");
-      return;
-    }
+  .then(order => {
     
     let itemsText = "";
     order.items.forEach(i => {
