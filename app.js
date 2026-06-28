@@ -812,7 +812,13 @@ function handleCheckoutSubmit(e) {
         body: JSON.stringify({ amount: finalTotal * 100, currency: "INR" })
       })
       .then(res => {
-        if (!res.ok) throw new Error("Order creation failed on backend");
+        if (!res.ok) {
+          return res.json().then(errData => {
+            throw new Error(errData.error || "Order creation failed on backend");
+          }).catch(() => {
+            throw new Error("Order creation failed on backend");
+          });
+        }
         return res.json();
       })
       .then(orderData => {
