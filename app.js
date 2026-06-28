@@ -250,6 +250,14 @@ function trackVisitor() {
 // PAGE ROUTING SYSTEM
 // ═══════════════════════════
 function showPage(pageId) {
+  if (pageId === 'profile') {
+    const user = localStorage.getItem('void_user');
+    if (!user) {
+      showPage('login');
+      return;
+    }
+  }
+
   const pages = document.querySelectorAll('.page');
   pages.forEach(page => page.classList.remove('active'));
 
@@ -2589,6 +2597,13 @@ function handleRouting() {
     showPage('login');
   } else if (path === '/signup') {
     showPage('signup');
+  } else if (path === '/profile') {
+    if (localStorage.getItem('void_user')) {
+      showPage('profile');
+    } else {
+      window.history.replaceState({}, '', '/login');
+      showPage('login');
+    }
   } else {
     if (path === '/' || path === '/index.html') {
       showPage('home');
