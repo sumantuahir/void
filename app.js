@@ -1278,7 +1278,9 @@ function loadAdminData() {
     document.getElementById('widget-users-count').textContent = metrics.totalUsers || 0;
     document.getElementById('widget-visitors-count').textContent = metrics.totalVisitors || 0;
     document.getElementById('widget-messages-count').textContent = metrics.contactMessages || 0;
-    document.getElementById('widget-wishlist-count').textContent = metrics.wishlistUsers || 0;
+    const waitlistCount = data.waitlist ? data.waitlist.length : (metrics.waitlistUsers || 0);
+    const widgetWaitlist = document.getElementById('widget-waitlist-count');
+    if (widgetWaitlist) widgetWaitlist.textContent = waitlistCount;
 
     // Sidebar counts updates
     document.getElementById('admin-sidebar-count-orders').textContent = metrics.totalOrders || 0;

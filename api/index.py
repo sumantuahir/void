@@ -737,7 +737,7 @@ class handler(http.server.BaseHTTPRequestHandler):
                     "returningVisitors": returning_vids,
                     "conversionRate": conv_rate,
                     "contactMessages": len(contacts),
-                    "wishlistUsers": 0,
+                    "waitlistUsers": len(waitlist),
                     "trafficSources": sources_grouped
                 }
             }).encode('utf-8'))
