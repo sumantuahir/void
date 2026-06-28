@@ -289,64 +289,16 @@ def init_db():
         VALUES (%s, %s, %s, %s, %s, %s) ON CONFLICT (email) DO NOTHING
     ''', ("Sumantuahir", "Sumantuahir2005@gmail.com", new_admin_pass, "superadmin", "active", datetime.now().isoformat()))
     
-    user_pass = hashlib.sha256("customer123".encode('utf-8')).hexdigest()
-    cursor.execute('''
-        INSERT INTO users (name, email, password, role, status, date)
-        VALUES (%s, %s, %s, %s, %s, %s) ON CONFLICT (email) DO NOTHING
-    ''', ("John Doe", "customer@void.com", user_pass, "customer", "active", (datetime.now() - timedelta(days=5)).isoformat()))
+
+    # Mock customer seeding removed as requested (dashboard should show real data)
+
 
     # Seed Coupons
     expiry_date = (datetime.now() + timedelta(days=30)).isoformat()
     cursor.execute("INSERT INTO coupons (code, discount, active, expiry) VALUES (%s, %s, %s, %s) ON CONFLICT (code) DO NOTHING", ("VOID10", 10, 1, expiry_date))
     cursor.execute("INSERT INTO coupons (code, discount, active, expiry) VALUES (%s, %s, %s, %s) ON CONFLICT (code) DO NOTHING", ("WELCOME20", 20, 1, expiry_date))
 
-    # Seed Mock Visitors (only if empty to avoid populating database endlessly)
-    cursor.execute("SELECT COUNT(*) FROM visitors")
-    if cursor.fetchone()[0] == 0:
-        today = datetime.now()
-        for i in range(14):
-            date_str = (today - timedelta(days=i)).strftime('%Y-%m-%d')
-            for _ in range(random.randint(15, 45)):
-                cursor.execute('''
-                    INSERT INTO visitors (session_id, ip, traffic_source, date, page_views)
-                    VALUES (%s, %s, %s, %s, %s)
-                ''', (
-                    f"sess_{random.randint(1000,9999)}", 
-                    f"192.168.1.{random.randint(1,254)}", 
-                    random.choice(["Direct", "Search Engine", "Social Media", "Referrals"]),
-                    date_str + "T12:00:00",
-                    random.randint(1, 6)
-                ))
-
-    # Seed Mock Orders (only if empty)
-    cursor.execute("SELECT COUNT(*) FROM orders")
-    if cursor.fetchone()[0] == 0:
-        today = datetime.now()
-        for i in range(10):
-            date_obj = today - timedelta(days=random.randint(0, 12))
-            order_id = f"VOID-{random.randint(100000,999999)}"
-            items_mock = [{"prodId": "001", "name": "The Tee", "price": 2400.0, "color": "Void", "size": "M", "qty": 1}]
-            total_mock = 2400.0
-            status_mock = random.choice(["pending", "processing", "shipped", "delivered", "cancelled"])
-            
-            cursor.execute('''
-                INSERT INTO orders (id, name, email, address, items, total, status, payment_status, paymentId, date)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            ''', (
-                order_id, "John Doe", "customer@void.com", "123 Ring Road, Surat", 
-                json.dumps(items_mock), total_mock, status_mock, "paid", f"pay_mock_{order_id}", 
-                date_obj.isoformat()
-            ))
-            
-            cursor.execute('''
-                INSERT INTO payments (order_id, transaction_id, method, amount, status, date)
-                VALUES (%s, %s, %s, %s, %s, %s)
-            ''', (
-                order_id, f"pay_mock_{order_id}", random.choice(["UPI", "Card", "Netbanking"]), 
-                total_mock, "success", date_obj.isoformat()
-            ))
-
-    # Mark database as seeded
+    # Mock Visitors and Orders seeding removed as requested (dashboard should show real data)
     cursor.execute("INSERT INTO settings (key, value) VALUES (%s, %s) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value", ("db_seeded", "true"))
     conn.commit()
     conn.close()
@@ -773,7 +725,7 @@ class VoidRequestHandler(http.server.SimpleHTTPRequestHandler):
                     "returningVisitors": returning_vids,
                     "conversionRate": conv_rate,
                     "contactMessages": len(contacts),
-                    "wishlistUsers": 5,
+                    "wishlistUsers": 0,
                     "trafficSources": sources_grouped
                 }
             }).encode('utf-8'))
