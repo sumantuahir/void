@@ -1088,11 +1088,7 @@
       
       <span class="drawer-section-title">Select Size</span>
       <div class="drawer-sizes" id="drawer-sizes">
-        <button class="drawer-size-btn" onclick="selectSize(this)">XS</button>
-        <button class="drawer-size-btn" onclick="selectSize(this)">S</button>
-        <button class="drawer-size-btn active" onclick="selectSize(this)">M</button>
-        <button class="drawer-size-btn" onclick="selectSize(this)">L</button>
-        <button class="drawer-size-btn" onclick="selectSize(this)">XL</button>
+        <!-- Dynamic sizes will be injected here -->
       </div>
       
       <button class="cform-submit" onclick="addToCartCurrent()" style="width: 100%; margin-top: 24px;">Add to Cart</button>
@@ -1297,17 +1293,48 @@
         <label class="cform-label" for="prod-form-category">Category</label>
         <input class="cform-input" type="text" id="prod-form-category" placeholder="e.g. Tops / Bottoms" required>
       </div>
-      <div class="cform-group">
-        <label class="cform-label" for="prod-form-stock">Stock Count</label>
-        <input class="cform-input" type="number" id="prod-form-stock" placeholder="e.g. 60" required>
-      </div>
+      <input type="hidden" id="prod-form-stock" value="0">
+      <input type="hidden" id="prod-form-sizes" value="">
+      
       <div class="cform-group">
         <label class="cform-label" for="prod-form-colors">Colors (comma separated)</label>
         <input class="cform-input" type="text" id="prod-form-colors" placeholder="Bone,Warm Stone,Slate Earth,Deep Ink,Void" required>
       </div>
+
       <div class="cform-group">
-        <label class="cform-label" for="prod-form-sizes">Sizes (comma separated)</label>
-        <input class="cform-input" type="text" id="prod-form-sizes" placeholder="XS,S,M,L,XL" required>
+        <label class="cform-label">Sizes & Stock Count</label>
+        <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 8px; background: rgba(240,237,230,0.02); padding: 16px; border-radius: 4px; border: 1px solid var(--faint);">
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--fg); cursor: pointer; margin: 0;">
+              <input type="checkbox" id="size-check-xs" class="size-selector-checkbox" value="XS" style="width: 16px; height: 16px; accent-color: var(--sand);"> XS
+            </label>
+            <input type="number" id="size-stock-xs" placeholder="XS Stock" min="0" class="cform-input" style="width: 120px; padding: 6px 12px; margin: 0; font-size: 12px;" value="0">
+          </div>
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--fg); cursor: pointer; margin: 0;">
+              <input type="checkbox" id="size-check-s" class="size-selector-checkbox" value="S" style="width: 16px; height: 16px; accent-color: var(--sand);"> S
+            </label>
+            <input type="number" id="size-stock-s" placeholder="S Stock" min="0" class="cform-input" style="width: 120px; padding: 6px 12px; margin: 0; font-size: 12px;" value="0">
+          </div>
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--fg); cursor: pointer; margin: 0;">
+              <input type="checkbox" id="size-check-m" class="size-selector-checkbox" value="M" style="width: 16px; height: 16px; accent-color: var(--sand);"> M
+            </label>
+            <input type="number" id="size-stock-m" placeholder="M Stock" min="0" class="cform-input" style="width: 120px; padding: 6px 12px; margin: 0; font-size: 12px;" value="0">
+          </div>
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--fg); cursor: pointer; margin: 0;">
+              <input type="checkbox" id="size-check-l" class="size-selector-checkbox" value="L" style="width: 16px; height: 16px; accent-color: var(--sand);"> L
+            </label>
+            <input type="number" id="size-stock-l" placeholder="L Stock" min="0" class="cform-input" style="width: 120px; padding: 6px 12px; margin: 0; font-size: 12px;" value="0">
+          </div>
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--fg); cursor: pointer; margin: 0;">
+              <input type="checkbox" id="size-check-xl" class="size-selector-checkbox" value="XL" style="width: 16px; height: 16px; accent-color: var(--sand);"> XL
+            </label>
+            <input type="number" id="size-stock-xl" placeholder="XL Stock" min="0" class="cform-input" style="width: 120px; padding: 6px 12px; margin: 0; font-size: 12px;" value="0">
+          </div>
+        </div>
       </div>
 
       <!-- Multiple Drag-and-drop image uploads -->

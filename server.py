@@ -1116,17 +1116,46 @@ class VoidRequestHandler(http.server.SimpleHTTPRequestHandler):
             payment_id = data.get("paymentId", "COD")
             date = data.get("date")
 
-            # Check product stocks
+            # Check product stocks (size-specific)
             for item in items:
-                cursor.execute("SELECT stock FROM products WHERE code = %s", (item.get("prodId"),))
+                cursor.execute("SELECT stock, sizes FROM products WHERE code = %s", (item.get("prodId"),))
                 row = cursor.fetchone()
-                if row and row[0] < item.get("qty"):
-                    self.send_response(400)
-                    self.send_header('Content-Type', 'application/json')
-                    self.end_headers()
-                    self.wfile.write(json.dumps({"error": f"Product {item.get('name')} is out of stock."}).encode('utf-8'))
-                    conn.close()
-                    return
+                if row:
+                    db_stock = row[0]
+                    db_sizes = row[1] or ""
+                    
+                    size_stocks = {}
+                    for part in db_sizes.split(","):
+                        if not part: continue
+                        if ":" in part:
+                            sz, stk = part.split(":", 1)
+                            try:
+                                stk_val = int(stk)
+                            except ValueError:
+                                stk_val = 0
+                        else:
+                            sz = part
+                            stk_val = db_stock
+                        size_stocks[sz] = stk_val
+                    
+                    selected_size = item.get("size")
+                    if size_stocks and selected_size:
+                        available_stock = size_stocks.get(selected_size, 0)
+                        if available_stock < item.get("qty"):
+                            self.send_response(400)
+                            self.send_header('Content-Type', 'application/json')
+                            self.end_headers()
+                            self.wfile.write(json.dumps({"error": f"Product {item.get('name')} (Size {selected_size}) is out of stock. (Available: {available_stock})"}).encode('utf-8'))
+                            conn.close()
+                            return
+                    else:
+                        if db_stock < item.get("qty"):
+                            self.send_response(400)
+                            self.send_header('Content-Type', 'application/json')
+                            self.end_headers()
+                            self.wfile.write(json.dumps({"error": f"Product {item.get('name')} is out of stock."}).encode('utf-8'))
+                            conn.close()
+                            return
 
             # Insert Order
             cursor.execute('''
@@ -1140,9 +1169,39 @@ class VoidRequestHandler(http.server.SimpleHTTPRequestHandler):
                 VALUES (%s, %s, %s, %s, %s, %s)
             ''', (order_id, payment_id, "Razorpay Simulation", total, "success", date))
 
-            # Decrement stocks
+            # Decrement stocks (size-specific)
             for item in items:
-                cursor.execute("UPDATE products SET stock = stock - %s WHERE code = %s", (item.get("qty"), item.get("prodId")))
+                cursor.execute("SELECT stock, sizes FROM products WHERE code = %s", (item.get("prodId"),))
+                row = cursor.fetchone()
+                if row:
+                    db_stock = row[0]
+                    db_sizes = row[1] or ""
+                    
+                    size_stocks = {}
+                    size_keys = []
+                    for part in db_sizes.split(","):
+                        if not part: continue
+                        if ":" in part:
+                            sz, stk = part.split(":", 1)
+                            try:
+                                stk_val = int(stk)
+                            except ValueError:
+                                stk_val = 0
+                        else:
+                            sz = part
+                            stk_val = db_stock
+                        size_stocks[sz] = stk_val
+                        size_keys.append(sz)
+                        
+                    selected_size = item.get("size")
+                    if size_stocks and selected_size in size_stocks:
+                        size_stocks[selected_size] = max(0, size_stocks[selected_size] - item.get("qty"))
+                        new_sizes_str = ",".join([f"{sz}:{size_stocks[sz]}" for sz in size_keys])
+                        new_total_stock = sum(size_stocks.values())
+                        cursor.execute("UPDATE products SET sizes = %s, stock = %s WHERE code = %s", (new_sizes_str, new_total_stock, item.get("prodId")))
+                    else:
+                        new_total_stock = max(0, db_stock - item.get("qty"))
+                        cursor.execute("UPDATE products SET stock = %s WHERE code = %s", (new_total_stock, item.get("prodId")))
 
             conn.commit()
             conn.close()
