@@ -1044,11 +1044,11 @@ class handler(http.server.BaseHTTPRequestHandler):
             razorpay_order_id = data.get("razorpay_order_id")
             razorpay_signature = data.get("razorpay_signature")
 
-            if not razorpay_payment_id or not razorpay_order_id or not razorpay_signature:
+            if not razorpay_payment_id or not razorpay_order_id:
                 self.send_response(400)
                 self.send_header('Content-Type', 'application/json')
                 self.end_headers()
-                self.wfile.write(json.dumps({"error": "Missing required signature fields"}).encode('utf-8'))
+                self.wfile.write(json.dumps({"error": "Missing required payment fields"}).encode('utf-8'))
                 conn.close()
                 return
 
@@ -1056,25 +1056,55 @@ class handler(http.server.BaseHTTPRequestHandler):
                 import razorpay
                 key_id, key_secret = get_razorpay_credentials()
                 client = razorpay.Client(auth=(key_id, key_secret))
-                client.utility.verify_payment_signature({
-                    'razorpay_order_id': razorpay_order_id,
-                    'razorpay_payment_id': razorpay_payment_id,
-                    'razorpay_signature': razorpay_signature
-                })
 
-                self.send_response(200)
-                self.send_header('Content-Type', 'application/json')
-                self.end_headers()
-                self.wfile.write(json.dumps({"status": "success", "message": "Payment verified successfully"}).encode('utf-8'))
+                verified = False
+
+                # Method 1: HMAC signature verification (preferred)
+                if razorpay_signature:
+                    try:
+                        client.utility.verify_payment_signature({
+                            'razorpay_order_id': razorpay_order_id,
+                            'razorpay_payment_id': razorpay_payment_id,
+                            'razorpay_signature': razorpay_signature
+                        })
+                        verified = True
+                        print(f"Payment {razorpay_payment_id} verified via HMAC signature")
+                    except Exception as sig_err:
+                        print(f"HMAC signature failed, falling back to API check: {sig_err}")
+
+                # Method 2: Fallback - directly fetch payment from Razorpay and check status
+                if not verified:
+                    try:
+                        payment_details = client.payment.fetch(razorpay_payment_id)
+                        if payment_details.get("status") in ["captured", "authorized"]:
+                            verified = True
+                            print(f"Payment {razorpay_payment_id} verified via API fetch (status={payment_details.get('status')})")
+                        else:
+                            print(f"Payment {razorpay_payment_id} not captured, status={payment_details.get('status')}")
+                    except Exception as fetch_err:
+                        print(f"Payment API fetch also failed: {fetch_err}")
+
+                if verified:
+                    self.send_response(200)
+                    self.send_header('Content-Type', 'application/json')
+                    self.end_headers()
+                    self.wfile.write(json.dumps({"status": "success", "message": "Payment verified successfully"}).encode('utf-8'))
+                else:
+                    self.send_response(400)
+                    self.send_header('Content-Type', 'application/json')
+                    self.end_headers()
+                    self.wfile.write(json.dumps({"error": "Payment could not be verified"}).encode('utf-8'))
+
             except Exception as e:
-                print(f"Razorpay signature verification failed: {e}")
-                self.send_response(400)
+                print(f"Razorpay verification error: {e}")
+                self.send_response(500)
                 self.send_header('Content-Type', 'application/json')
                 self.end_headers()
-                self.wfile.write(json.dumps({"error": "Signature verification failed"}).encode('utf-8'))
+                self.wfile.write(json.dumps({"error": f"Verification error: {str(e)}"}).encode('utf-8'))
             finally:
                 conn.close()
             return
+
 
         # 2. POST Contact Form API
         elif self.path == "/api/contact":
