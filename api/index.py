@@ -68,6 +68,22 @@ def get_db_conn():
     return PooledConnection(_db_conn)
 
 
+def parse_images(images_str):
+    if not images_str:
+        return []
+    raw_parts = images_str.split(",")
+    parts = []
+    i = 0
+    while i < len(raw_parts):
+        part = raw_parts[i]
+        if part.startswith("data:image/") and i + 1 < len(raw_parts):
+            parts.append(part + "," + raw_parts[i+1])
+            i += 2
+        else:
+            parts.append(part)
+            i += 1
+    return parts
+
 def is_admin(headers):
     email = headers.get('X-User-Email')
     if not email:
@@ -495,7 +511,7 @@ class handler(http.server.BaseHTTPRequestHandler):
                     "stock": row["stock"],
                     "colors": row["colors"].split(",") if row["colors"] else [],
                     "sizes": row["sizes"].split(",") if row["sizes"] else [],
-                    "images": row["images"].split(",") if row["images"] else [],
+                    "images": parse_images(row["images"]),
                     "discount": row["discount"],
                     "featured": bool(row["featured"]),
                     "active": bool(row["active"])
@@ -646,7 +662,7 @@ class handler(http.server.BaseHTTPRequestHandler):
                     "stock": row["stock"],
                     "colors": row["colors"].split(",") if row["colors"] else [],
                     "sizes": row["sizes"].split(",") if row["sizes"] else [],
-                    "images": row["images"].split(",") if row["images"] else [],
+                    "images": parse_images(row["images"]),
                     "discount": row["discount"],
                     "featured": bool(row["featured"]) if "featured" in row else False,
                     "active": bool(row["active"])
@@ -952,21 +968,24 @@ class handler(http.server.BaseHTTPRequestHandler):
             featured = 1 if data.get("featured") else 0
             prod_id = data.get("id")
 
-            # Save base64 uploaded images if any
+            # Process and resolve base64 dataUrls directly into the images string (saving base64 directly to database)
             uploaded_images = data.get("uploaded_images", [])
+            images_list = [img.strip() for img in data.get("images", "tee.png").split(",") if img.strip()]
+            
+            uploaded_map = {}
             for img in uploaded_images:
                 img_name = img.get("name")
                 img_data_url = img.get("dataUrl")
-                if img_name and img_data_url and "," in img_data_url:
-                    try:
-                        import base64
-                        base64_data = img_data_url.split(",")[1]
-                        img_data = base64.b64decode(base64_data)
-                        with open(img_name, "wb") as f:
-                            f.write(img_data)
-                        print(f"Successfully saved uploaded image {img_name}")
-                    except Exception as err:
-                        print(f"Error saving uploaded image {img_name}: {err}")
+                if img_name and img_data_url:
+                    uploaded_map[img_name] = img_data_url
+                    
+            resolved_images = []
+            for img_name in images_list:
+                if img_name in uploaded_map:
+                    resolved_images.append(uploaded_map[img_name])
+                else:
+                    resolved_images.append(img_name)
+            images = ",".join(resolved_images)
 
             if prod_id:
                 cursor.execute('''
