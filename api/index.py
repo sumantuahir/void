@@ -86,6 +86,20 @@ def parse_images(images_str):
             i += 1
     return parts
 
+def get_razorpay_credentials():
+    key_id = os.getenv("RAZORPAY_KEY_ID")
+    key_secret = os.getenv("RAZORPAY_KEY_SECRET")
+    if not key_id or not key_secret:
+        try:
+            settings = get_settings()
+            if not key_id:
+                key_id = settings.get("razorpay_key")
+            if not key_secret:
+                key_secret = settings.get("razorpay_secret")
+        except Exception as e:
+            print(f"Error getting credentials from DB: {e}")
+    return key_id, key_secret
+
 def is_admin(headers):
     email = headers.get('X-User-Email')
     if not email:
@@ -824,7 +838,8 @@ class handler(http.server.BaseHTTPRequestHandler):
 
             try:
                 import razorpay
-                client = razorpay.Client(auth=(RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET))
+                key_id, key_secret = get_razorpay_credentials()
+                client = razorpay.Client(auth=(key_id, key_secret))
                 order_data = {
                     "amount": int(amount),
                     "currency": currency,
@@ -867,7 +882,8 @@ class handler(http.server.BaseHTTPRequestHandler):
 
             try:
                 import razorpay
-                client = razorpay.Client(auth=(RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET))
+                key_id, key_secret = get_razorpay_credentials()
+                client = razorpay.Client(auth=(key_id, key_secret))
                 client.utility.verify_payment_signature({
                     'razorpay_order_id': razorpay_order_id,
                     'razorpay_payment_id': razorpay_payment_id,
