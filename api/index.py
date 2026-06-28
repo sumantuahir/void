@@ -122,8 +122,8 @@ def init_db():
 
     # Unconditionally force-update mock Razorpay credentials to the correct ones if settings table exists
     try:
-        cursor.execute("UPDATE settings SET value = 'rzp_test_T77MFwnA1Q4hFX' WHERE key = 'razorpay_key' AND (value IS NULL OR value = '' OR value = 'rzp_test_mock_key_id')")
-        cursor.execute("UPDATE settings SET value = 'ni4pNHaGXFKHjDHatmxWJ0AE' WHERE key = 'razorpay_secret' AND (value IS NULL OR value = '' OR value = 'rzp_test_mock_secret')")
+        cursor.execute("UPDATE settings SET value = 'rzp_live_T78YfksyJxo5Hd' WHERE key = 'razorpay_key' AND (value IS NULL OR value = '' OR value = 'rzp_test_mock_key_id' OR value = 'rzp_test_T77MFwnA1Q4hFX')")
+        cursor.execute("UPDATE settings SET value = 'QHwhu188386lMSsVeeswTR47' WHERE key = 'razorpay_secret' AND (value IS NULL OR value = '' OR value = 'rzp_test_mock_secret' OR value = 'ni4pNHaGXFKHjDHatmxWJ0AE')")
         conn.commit()
     except Exception as e:
         pass
@@ -302,8 +302,8 @@ def init_db():
         ("smtp_port", "587"),
         ("smtp_user", "void.essential.in@gmail.com"),
         ("smtp_pass", ""),
-        ("razorpay_key", "rzp_test_mock_key_id"),
-        ("razorpay_secret", "rzp_test_mock_secret"),
+        ("razorpay_key", "rzp_live_T78YfksyJxo5Hd"),
+        ("razorpay_secret", "QHwhu188386lMSsVeeswTR47"),
         ("seo_title", "VOID — Minimal Essentials"),
         ("seo_description", "Premium organic minimal essentials sourced from Surat, India.")
     ]
@@ -466,7 +466,7 @@ class handler(http.server.BaseHTTPRequestHandler):
         if path == "/api/settings":
             settings = get_settings()
             public_settings = {k: v for k, v in settings.items() if not k.endswith("pass") and not k.endswith("secret")}
-            public_settings["razorpay_key_id"] = os.getenv("RAZORPAY_KEY_ID", settings.get("razorpay_key", "rzp_test_mock_key_id"))
+            public_settings["razorpay_key_id"] = os.getenv("RAZORPAY_KEY_ID", settings.get("razorpay_key", "rzp_live_T78YfksyJxo5Hd"))
             self.send_response(200)
             self.send_header('Content-Type', 'application/json')
             self.end_headers()
