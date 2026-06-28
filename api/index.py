@@ -1120,10 +1120,14 @@ class handler(http.server.BaseHTTPRequestHandler):
                 ''', (name, email, subject, message, date))
                 conn.commit()
                 
-                # Dispatch notification email synchronously
+                # Dispatch notification email asynchronously in a background thread to prevent blocking/timeouts
                 subj = f"[VOID Contact] Message from {name}"
                 body = f"Name: {name}\nEmail: {email}\nSubject: {subject}\n\nMessage:\n{message}"
-                send_direct_email(email, subj, body)
+                import threading
+                try:
+                    threading.Thread(target=send_direct_email, args=(email, subj, body)).start()
+                except Exception as mail_err:
+                    print(f"Failed to start contact email thread: {mail_err}")
 
                 self.send_response(201)
                 self.send_header('Content-Type', 'application/json')
@@ -1181,10 +1185,14 @@ class handler(http.server.BaseHTTPRequestHandler):
             conn.commit()
             conn.close()
 
-            # Email Invoice Dispatch synchronously
+            # Email Invoice Dispatch asynchronously in a background thread to prevent blocking/timeouts
             subj = f"[VOID Order] Confirmation - Receipt {order_id}"
             body = f"Thank you for placing order {order_id}.\nTotal amount paid: ₹{total:,}.\nItems will arrive shortly."
-            send_direct_email(email, subj, body)
+            import threading
+            try:
+                threading.Thread(target=send_direct_email, args=(email, subj, body)).start()
+            except Exception as mail_err:
+                print(f"Failed to start order email thread: {mail_err}")
 
             self.send_response(201)
             self.send_header('Content-Type', 'application/json')
