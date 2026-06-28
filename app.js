@@ -799,35 +799,89 @@ function handleCheckoutSubmit(e) {
     date: new Date().toISOString()
   };
 
-  // Launch Razorpay Simulation Overlay Modal
-  document.getElementById('rzp-order-id-label').textContent = `Order Reference: ${orderId}`;
-  document.getElementById('rzp-amount-label').textContent = `₹${finalTotal.toLocaleString('en-IN')}`;
-  
-  document.getElementById('razorpay-modal').classList.add('open');
-  document.getElementById('razorpay-modal-overlay').classList.add('open');
+  // 1. Fetch public settings to get razorpay_key_id
+  voidFetch(`${API_BASE}/api/settings`)
+    .then(res => res.json())
+    .then(settings => {
+      const keyId = settings.razorpay_key_id || "rzp_test_mock_key_id";
+      
+      // 2. Call create-order on backend (amount in paise, e.g. finalTotal * 100)
+      return voidFetch(`${API_BASE}/api/create-order`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount: finalTotal * 100, currency: "INR" })
+      })
+      .then(res => {
+        if (!res.ok) throw new Error("Order creation failed on backend");
+        return res.json();
+      })
+      .then(orderData => {
+        // 3. Launch official Razorpay Checkout Modal
+        const options = {
+          "key": keyId,
+          "amount": orderData.amount,
+          "currency": orderData.currency,
+          "name": "VOID Essentials",
+          "description": `Order Reference: ${orderId}`,
+          "order_id": orderData.order_id,
+          "handler": function (response) {
+            verifyPayment(response, pendingOrderRecord);
+          },
+          "prefill": {
+            "name": name,
+            "email": email
+          },
+          "theme": {
+            "color": "#0d0d0b"
+          }
+        };
+        const rzp1 = new Razorpay(options);
+        rzp1.on('payment.failed', function (response) {
+          alert("Payment failed: " + response.error.description);
+        });
+        rzp1.open();
+      });
+    })
+    .catch(err => {
+      console.error(err);
+      alert("Failed to initialize payment process: " + err.message);
+    });
 }
 
-function simulatePaymentSuccess(method) {
-  if (!pendingOrderRecord) return;
-
-  const payRef = 'pay_' + Math.random().toString(36).substring(2, 10).toUpperCase();
-  pendingOrderRecord.paymentId = `${payRef}_${method.toUpperCase()}`;
-
-  voidFetch(`${API_BASE}/api/orders`, {
+function verifyPayment(rzpResponse, orderRecord) {
+  voidFetch(`${API_BASE}/api/verify-payment`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(pendingOrderRecord)
+    body: JSON.stringify({
+      razorpay_payment_id: rzpResponse.razorpay_payment_id,
+      razorpay_order_id: rzpResponse.razorpay_order_id,
+      razorpay_signature: rzpResponse.razorpay_signature
+    })
+  })
+  .then(res => {
+    if (!res.ok) throw new Error('Payment signature verification failed.');
+    return res.json();
+  })
+  .then(verificationResult => {
+    // Payment verified! Update order object and save to DB
+    orderRecord.paymentId = rzpResponse.razorpay_payment_id;
+    orderRecord.payment_status = 'paid';
+
+    return voidFetch(`${API_BASE}/api/orders`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(orderRecord)
+    });
   })
   .then(res => {
     if (!res.ok) throw new Error('Order submission failed');
     return res.json();
   })
   .then(data => {
-    closeRazorpayModal();
     document.getElementById('checkout-form').style.display = 'none';
 
     // Clear cart state
-    const placedOrder = pendingOrderRecord;
+    const placedOrder = orderRecord;
     cart = [];
     appliedCoupon = null;
     localStorage.removeItem('void_cart');
@@ -845,7 +899,7 @@ function simulatePaymentSuccess(method) {
   })
   .catch(err => {
     console.error(err);
-    alert('Failed to place order. Please try again.');
+    alert(err.message || 'Verification or order placement failed.');
   });
 }
 

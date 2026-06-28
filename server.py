@@ -21,6 +21,8 @@ load_dotenv()
 
 PORT = int(os.getenv("PORT", 8000))
 DB_URL = os.getenv("SUPABASE_DB_URL")
+RAZORPAY_KEY_ID = os.getenv("RAZORPAY_KEY_ID")
+RAZORPAY_KEY_SECRET = os.getenv("RAZORPAY_KEY_SECRET")
 
 # ═══════════════════════════
 # DATABASE INITIALIZATION
@@ -412,8 +414,8 @@ class VoidRequestHandler(http.server.SimpleHTTPRequestHandler):
         # 1. GET Settings API
         if path == "/api/settings":
             settings = get_settings()
-            # Filter out sensitive fields for public endpoint
             public_settings = {k: v for k, v in settings.items() if not k.endswith("pass") and not k.endswith("secret")}
+            public_settings["razorpay_key_id"] = os.getenv("RAZORPAY_KEY_ID", settings.get("razorpay_key", "rzp_test_mock_key_id"))
             self.send_response(200)
             self.send_header('Content-Type', 'application/json')
             self.end_headers()
@@ -774,6 +776,86 @@ class VoidRequestHandler(http.server.SimpleHTTPRequestHandler):
                 self.send_header('Content-Type', 'application/json')
                 self.end_headers()
                 self.wfile.write(json.dumps({"error": str(e)}).encode('utf-8'))
+            finally:
+                conn.close()
+            return
+
+        # Razorpay Create Order Endpoint
+        elif self.path == "/api/create-order":
+            amount = data.get("amount") # in paise
+            currency = data.get("currency", "INR")
+            receipt = data.get("receipt", f"receipt_{int(datetime.now().timestamp())}")
+
+            if not amount or int(amount) < 100:
+                self.send_response(400)
+                self.send_header('Content-Type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps({"error": "Amount must be at least 100 paise"}).encode('utf-8'))
+                conn.close()
+                return
+
+            try:
+                import razorpay
+                client = razorpay.Client(auth=(RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET))
+                order_data = {
+                    "amount": int(amount),
+                    "currency": currency,
+                    "receipt": receipt,
+                    "payment_capture": 1
+                }
+                razorpay_order = client.order.create(data=order_data)
+                
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps({
+                    "order_id": razorpay_order["id"],
+                    "amount": razorpay_order["amount"],
+                    "currency": razorpay_order["currency"]
+                }).encode('utf-8'))
+            except Exception as e:
+                print(f"Error creating Razorpay order: {e}")
+                self.send_response(500)
+                self.send_header('Content-Type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps({"error": "Internal server error"}).encode('utf-8'))
+            finally:
+                conn.close()
+            return
+
+        # Razorpay Verify Payment Signature Endpoint
+        elif self.path == "/api/verify-payment":
+            razorpay_payment_id = data.get("razorpay_payment_id")
+            razorpay_order_id = data.get("razorpay_order_id")
+            razorpay_signature = data.get("razorpay_signature")
+
+            if not razorpay_payment_id or not razorpay_order_id or not razorpay_signature:
+                self.send_response(400)
+                self.send_header('Content-Type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps({"error": "Missing required signature fields"}).encode('utf-8'))
+                conn.close()
+                return
+
+            try:
+                import razorpay
+                client = razorpay.Client(auth=(RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET))
+                client.utility.verify_payment_signature({
+                    'razorpay_order_id': razorpay_order_id,
+                    'razorpay_payment_id': razorpay_payment_id,
+                    'razorpay_signature': razorpay_signature
+                })
+
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps({"status": "success", "message": "Payment verified successfully"}).encode('utf-8'))
+            except Exception as e:
+                print(f"Razorpay signature verification failed: {e}")
+                self.send_response(400)
+                self.send_header('Content-Type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps({"error": "Signature verification failed"}).encode('utf-8'))
             finally:
                 conn.close()
             return
