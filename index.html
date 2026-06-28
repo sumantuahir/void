@@ -70,6 +70,7 @@
       <!-- Authenticated Links -->
       <span id="nav-user-links" style="display: none; align-items: center; gap: 16px;">
         <a class="nav-link nav-user-name" id="nav-username-display" href="#" onclick="showPage('profile'); return false;">Profile</a>
+        <a class="nav-link" id="nav-link-orders" href="#" onclick="showPage('profile'); return false;">Orders</a>
         <a class="nav-link" id="nav-link-admin-panel" href="#" onclick="window.history.pushState({}, '', '/admin-dashboard'); handleRouting(); return false;" style="display: none; color: #ff3b30; font-weight: 600;">Admin Panel</a>
         <button class="nav-logout-btn" onclick="handleLogout()">Log Out</button>
       </span>
@@ -312,11 +313,11 @@
       </div>
 
       <!-- Right Column: Order History -->
-      <div style="padding: 20px;">
+      <div style="padding: 20px;" id="profile-orders-section">
         <h2 style="font-family: 'Space Grotesk', sans-serif; font-size: 24px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--white); margin-bottom: 24px; font-weight: 500;">Order History</h2>
         
         <div style="overflow-x: auto; background: #11100e; border: 1px solid #2a2825; padding: 16px;">
-          <table style="width: 100%; border-collapse: collapse; text-align: left; min-width: 500px;">
+          <table style="width: 100%; border-collapse: collapse; text-align: left; min-width: 600px;">
             <thead>
               <tr style="border-bottom: 1px solid #2a2825; color: var(--mid); font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em;">
                 <th style="padding: 10px 8px; font-weight: 500;">Order ID</th>
@@ -324,6 +325,7 @@
                 <th style="padding: 10px 8px; font-weight: 500;">Items Ordered</th>
                 <th style="padding: 10px 8px; font-weight: 500;">Total</th>
                 <th style="padding: 10px 8px; font-weight: 500;">Status</th>
+                <th style="padding: 10px 8px; font-weight: 500;">Invoice</th>
               </tr>
             </thead>
             <tbody id="profile-orders-list">

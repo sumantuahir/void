@@ -1119,8 +1119,6 @@ function loadUserProfileData() {
   const ordersContainer = document.getElementById('profile-orders-list');
   if (!ordersContainer) return;
 
-  ordersContainer.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--mid); padding:24px;">Loading order history...</td></tr>';
-
   // Fetch tickets for this user too (render inside profile page tickets container)
   const profileTicketsContainer = document.getElementById('profile-tickets-list');
   if (profileTicketsContainer) {
@@ -1153,16 +1151,17 @@ function loadUserProfileData() {
       });
   }
 
-  // Fetch orders
-  voidFetch(`${API_BASE}/api/orders/my?user_id=${user.email}`)
+  // Fetch orders - encode email to handle special characters correctly
+  const encodedEmail = encodeURIComponent(user.email);
+  voidFetch(`${API_BASE}/api/orders/my?user_id=${encodedEmail}`)
     .then(res => {
-      if (!res.ok) throw new Error("Failed to load orders");
+      if (!res.ok) return res.text().then(t => { throw new Error(`${res.status}: ${t}`); });
       return res.json();
     })
     .then(orders => {
       ordersContainer.innerHTML = '';
-      if (orders.length === 0) {
-        ordersContainer.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--mid); padding:24px;">You have not placed any orders yet.</td></tr>';
+      if (!orders || orders.length === 0) {
+        ordersContainer.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--mid); padding:32px; font-size:13px;">You have not placed any orders yet.</td></tr>';
         return;
       }
 

@@ -531,7 +531,7 @@ class VoidRequestHandler(http.server.SimpleHTTPRequestHandler):
         query = urllib.parse.parse_qs(parsed_url.query)
 
         # Intercept SPA routes to serve index.html
-        if path in ["/admin-login", "/admin-dashboard", "/login", "/signup"]:
+        if path in ["/admin-login", "/admin-dashboard", "/login", "/signup", "/profile"]:
             self.send_response(200)
             self.send_header('Content-Type', 'text/html')
             self.end_headers()
