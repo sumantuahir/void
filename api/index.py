@@ -364,10 +364,17 @@ def init_db():
         )
     ''')
 
-    # Unconditionally seed default products if the products table is empty or has only 1 demo product
+    # Check if database is already seeded to avoid re-inserting deleted products
+    cursor.execute("SELECT value FROM settings WHERE key = 'db_seeded'")
+    row = cursor.fetchone()
+    if row and row[0] == 'true':
+        conn.close()
+        return
+
+    # Seed Default Products (with 4 premium products) if it's the first time initialization
     try:
         cursor.execute("SELECT COUNT(*) FROM products")
-        if cursor.fetchone()[0] <= 1:
+        if cursor.fetchone()[0] == 0:
             default_prods = [
                 ("001", "The Tee", 2400.0, 
                  "A classic crew neck cut with a heavy drape. Fabric is knitted in Surat from premium long-staple Supima cotton for a smooth face that softens with age. Finished with clean, invisible blind-stitched seams.",
@@ -390,13 +397,6 @@ def init_db():
             conn.commit()
     except Exception as e:
         print(f"Error seeding default products: {e}")
-
-    # Check if database is already seeded to avoid re-inserting deleted products
-    cursor.execute("SELECT value FROM settings WHERE key = 'db_seeded'")
-    row = cursor.fetchone()
-    if row and row[0] == 'true':
-        conn.close()
-        return
 
     # Seed Default Settings
     default_settings = [
