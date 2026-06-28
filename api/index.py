@@ -846,7 +846,7 @@ class handler(http.server.BaseHTTPRequestHandler):
                 self.send_response(500)
                 self.send_header('Content-Type', 'application/json')
                 self.end_headers()
-                self.wfile.write(json.dumps({"error": "Internal server error"}).encode('utf-8'))
+                self.wfile.write(json.dumps({"error": f"Internal server error: {str(e)}"}).encode('utf-8'))
             finally:
                 conn.close()
             return

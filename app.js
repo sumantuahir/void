@@ -813,10 +813,13 @@ function handleCheckoutSubmit(e) {
       })
       .then(res => {
         if (!res.ok) {
-          return res.json().then(errData => {
-            throw new Error(errData.error || "Order creation failed on backend");
-          }).catch(() => {
-            throw new Error("Order creation failed on backend");
+          return res.text().then(text => {
+            try {
+              const errData = JSON.parse(text);
+              throw new Error(errData.error || "Order creation failed on backend");
+            } catch (e) {
+              throw new Error(text.substring(0, 300) || "Order creation failed on backend");
+            }
           });
         }
         return res.json();
