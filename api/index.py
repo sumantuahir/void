@@ -626,19 +626,26 @@ class handler(http.server.BaseHTTPRequestHandler):
         # GET Authenticated User's Orders API (History)
         elif path == "/api/orders/my" or path == "/api/orders":
             user_id = query.get("user_id", [None])[0]
+            # Also check the auth header for the logged-in user's email
+            header_email = self.headers.get('X-User-Email', '').strip()
             conn = get_db_conn()
             cursor = conn.cursor(cursor_factory=RealDictCursor)
-            
-            if user_id:
+
+            if is_admin(self.headers) and not user_id:
+                # Admin with no filter: return all orders
+                cursor.execute("SELECT * FROM orders ORDER BY date DESC")
+            elif user_id:
+                # Explicit user_id filter - any logged-in user can query their own email
                 cursor.execute("SELECT * FROM orders WHERE LOWER(email) = LOWER(%s) ORDER BY date DESC", (user_id.strip(),))
+            elif header_email:
+                # Fallback: use authenticated user's header email
+                cursor.execute("SELECT * FROM orders WHERE LOWER(email) = LOWER(%s) ORDER BY date DESC", (header_email,))
             else:
-                if is_admin(self.headers):
-                    cursor.execute("SELECT * FROM orders ORDER BY date DESC")
-                else:
-                    self.send_response(401)
-                    self.end_headers()
-                    conn.close()
-                    return
+                self.send_response(401)
+                self.send_header('Content-Type', 'application/json')
+                self.end_headers()
+                conn.close()
+                return
             
             rows = cursor.fetchall()
             orders = []
