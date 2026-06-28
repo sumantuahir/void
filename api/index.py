@@ -364,6 +364,33 @@ def init_db():
         )
     ''')
 
+    # Unconditionally seed default products if the products table is empty or has only 1 demo product
+    try:
+        cursor.execute("SELECT COUNT(*) FROM products")
+        if cursor.fetchone()[0] <= 1:
+            default_prods = [
+                ("001", "The Tee", 2400.0, 
+                 "A classic crew neck cut with a heavy drape. Fabric is knitted in Surat from premium long-staple Supima cotton for a smooth face that softens with age. Finished with clean, invisible blind-stitched seams.",
+                 "Tops", 85, "Bone,Warm Stone,Slate Earth,Deep Ink,Void", "XS,S,M,L,XL", "tee.png", 0, 1),
+                ("002", "The Linen Shirt", 3800.0,
+                 "A relaxed, breathable summer classic. Blended cotton-linen woven in Surat, offering the raw texture of linen with the crease-resistant stability of cotton. Single patch pocket, clean collar.",
+                 "Tops", 50, "Bone,Warm Stone,Slate Earth,Deep Ink", "S,M,L,XL", "shirt.png", 0, 1),
+                ("003", "The Classic T-Shirt", 1900.0,
+                 "A classic standard fit tee made from organic cotton knitted in Surat. High neck ribbing and clean flatlock stitching make this an everyday layering staple.",
+                 "Tops", 60, "Bone,Void,Warm Stone", "S,M,L,XL", "tee.png", 0, 1),
+                ("004", "The Oversized T-Shirt", 2600.0,
+                 "A heavy drop-shoulder boxy fit streetwear staple. Woven from 280 GSM thick cotton jersey with a structured drape and a tight rib collar.",
+                 "Tops", 45, "Void,Deep Ink,Slate Earth", "M,L,XL", "tee.png", 0, 1)
+            ]
+            for p in default_prods:
+                cursor.execute('''
+                    INSERT INTO products (code, name, price, "desc", category, stock, colors, sizes, images, discount, featured, active)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 1) ON CONFLICT (code) DO NOTHING
+                ''', p)
+            conn.commit()
+    except Exception as e:
+        print(f"Error seeding default products: {e}")
+
     # Check if database is already seeded to avoid re-inserting deleted products
     cursor.execute("SELECT value FROM settings WHERE key = 'db_seeded'")
     row = cursor.fetchone()
