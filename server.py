@@ -123,6 +123,14 @@ def init_db():
     conn = get_db_conn()
     cursor = conn.cursor()
 
+    # Unconditionally force-update mock Razorpay credentials to the correct ones if settings table exists
+    try:
+        cursor.execute("UPDATE settings SET value = 'rzp_test_T77MFwnA1Q4hFX' WHERE key = 'razorpay_key' AND (value IS NULL OR value = '' OR value = 'rzp_test_mock_key_id')")
+        cursor.execute("UPDATE settings SET value = 'ni4pNHaGXFKHjDHatmxWJ0AE' WHERE key = 'razorpay_secret' AND (value IS NULL OR value = '' OR value = 'rzp_test_mock_secret')")
+        conn.commit()
+    except Exception as e:
+        pass
+
     # Ensure tables are built to support advanced e-commerce fields in PostgreSQL
 
     # Users Table
@@ -330,10 +338,6 @@ def init_db():
     cursor.execute("INSERT INTO coupons (code, discount, active, expiry) VALUES (%s, %s, %s, %s) ON CONFLICT (code) DO NOTHING", ("VOID10", 10, 1, expiry_date))
     cursor.execute("INSERT INTO coupons (code, discount, active, expiry) VALUES (%s, %s, %s, %s) ON CONFLICT (code) DO NOTHING", ("WELCOME20", 20, 1, expiry_date))
 
-    # Force seed real Razorpay credentials if database contains mock credentials
-    cursor.execute("UPDATE settings SET value = 'rzp_test_T77MFwnA1Q4hFX' WHERE key = 'razorpay_key' AND (value IS NULL OR value = '' OR value = 'rzp_test_mock_key_id')")
-    cursor.execute("UPDATE settings SET value = 'ni4pNHaGXFKHjDHatmxWJ0AE' WHERE key = 'razorpay_secret' AND (value IS NULL OR value = '' OR value = 'rzp_test_mock_secret')")
-    
     cursor.execute("INSERT INTO settings (key, value) VALUES (%s, %s) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value", ("db_seeded", "true"))
     conn.commit()
     conn.close()
