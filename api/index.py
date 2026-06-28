@@ -541,6 +541,8 @@ class handler(http.server.BaseHTTPRequestHandler):
 
     def do_GET(self):
         try:
+            # Preserve original path (with query string) for param parsing
+            self._original_path = self.path
             self.path = get_request_path(self)
             self._do_GET()
         except Exception as e:
@@ -567,7 +569,9 @@ class handler(http.server.BaseHTTPRequestHandler):
 
         parsed_url = urllib.parse.urlparse(self.path)
         path = parsed_url.path
-        query = urllib.parse.parse_qs(parsed_url.query)
+        # Use original path for query string parsing (Vercel strips query from self.path via get_request_path)
+        original_path = getattr(self, '_original_path', self.path)
+        query = urllib.parse.parse_qs(urllib.parse.urlparse(original_path).query)
 
         # 1. GET Settings API
         if path == "/api/settings":
